@@ -1,0 +1,9 @@
+[submodule "services/patients-service"]
+	path = services/patients-service
+	url = git@github.com:uemerson199/patients-service.git
+[submodule "services/scheduling-service"]
+	path = services/scheduling-service
+	url = git@github.com:uemerson199/scheduling-service.git
+[submodule "services/notification-service"]
+	path = services/notification-service
+	url = git@github.com:uemerson199/notification-service.git
