@@ -1,2 +1,13 @@
-# IDE files
+.gradle/
 .idea/
+/build/
+*.iml
+.DS_Store
+/gradle/wrapper/gradle-wrapper.jar
+!/gradle/wrapper/gradle-wrapper.properties
+/gradlew
+/gradlew.bat
+# Frontend build artifacts and dependencies
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env
