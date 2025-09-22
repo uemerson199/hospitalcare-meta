@@ -1,5 +1,6 @@
-version: '3.8'
+
 services:
+
   postgres:
     image: postgres:13
     container_name: hospitaldb
@@ -32,7 +33,6 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
-      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
@@ -40,6 +40,43 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
+  patients-service:
+    build:
+      context: ../services/patients-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+    depends_on:
+      - postgres
+
+  scheduling-service:
+    build:
+      context: ../services/scheduling-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - PATIENT_SERVICE_URL=http://patients-service:8081/patients
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+
+  gateway-service:
+    build:
+      context: ../services/gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - patients-service
+      - scheduling-service
 
 volumes:
   postgres_data:
