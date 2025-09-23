@@ -10,3 +10,6 @@
 [submodule "services/gateway-service"]
 	path = services/gateway-service
 	url = git@github.com:uemerson199/gateway-service.git
+[submodule "services/auth-service"]
+	path = services/auth-service
+	url = git@github.com:uemerson199/auth-service.git
