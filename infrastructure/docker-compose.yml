@@ -1,9 +1,7 @@
 
 version: '3.8'
 
-
 services:
-
   postgres:
     image: postgres:13
     container_name: hospitaldb
@@ -22,9 +20,6 @@ services:
     ports:
       - "6379:6379"
 
-
-
-
   patients-service:
     build:
       context: ../services/patients-service
@@ -33,6 +28,8 @@ services:
     environment:
       - SERVER_PORT=8081
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
       - postgres
 
@@ -44,11 +41,27 @@ services:
     environment:
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_DATA_REDIS_HOST=redis
       - PATIENT_SERVICE_URL=http://patients-service:8081/patients
     depends_on:
       - postgres
       - redis
+
+  auth-service:
+    build:
+      context: ../services/auth-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVER_PORT=8084
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+      - JWT_SECRET_KEY=BwL26QVI4U4r7/LPPpR1dLc43jhKiAyfV2K20Yehd/4=
+    depends_on:
+      - postgres
 
   gateway-service:
     build:
@@ -58,7 +71,8 @@ services:
     depends_on:
       - patients-service
       - scheduling-service
-
+      - auth-service
 
 volumes:
   postgres_data:
+
