@@ -1,15 +1,17 @@
 [submodule "services/patients-service"]
 	path = services/patients-service
-	url = git@github.com:uemerson199/patients-service.git
+	url = https://github.com/uemerson199/patients-service.git
 [submodule "services/scheduling-service"]
 	path = services/scheduling-service
 	url = git@github.com:uemerson199/scheduling-service.git
 [submodule "services/notification-service"]
 	path = services/notification-service
-	url = git@github.com:uemerson199/notification-service.git
+	url = https://github.com/uemerson199/notification-service.git
 [submodule "services/gateway-service"]
 	path = services/gateway-service
-	url = git@github.com:uemerson199/gateway-service.git
+	url = https://github.com/uemerson199/gateway-service.git
 [submodule "services/auth-service"]
 	path = services/auth-service
-	url = git@github.com:uemerson199/auth-service.git
+	url = https://github.com/uemerson199/auth-service.git
+[submodule "services.scheduling-service"]
+	url = https://github.com/uemerson199/scheduling-service.git
