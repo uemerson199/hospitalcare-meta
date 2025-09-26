@@ -1,7 +1,6 @@
 
-version: '3.8'
-
 services:
+
   postgres:
     image: postgres:13
     container_name: hospitaldb
@@ -20,63 +19,64 @@ services:
     ports:
       - "6379:6379"
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
   patients-service:
     build:
       context: ../services/patients-service
-      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
       - SERVER_PORT=8081
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
       - postgres
 
   scheduling-service:
     build:
       context: ../services/scheduling-service
-      dockerfile: Dockerfile
     ports:
       - "8082:8082"
     environment:
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - PATIENT_SERVICE_URL=http://patients-service:8081/patients
     depends_on:
       - postgres
       - redis
-
-  auth-service:
-    build:
-      context: ../services/auth-service
-      dockerfile: Dockerfile
-    ports:
-      - "8084:8084"
-    environment:
-      - SERVER_PORT=8084
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
-      - SPRING_DATASOURCE_USERNAME=user
-      - SPRING_DATASOURCE_PASSWORD=password
-      - JWT_SECRET_KEY=BwL26QVI4U4r7/LPPpR1dLc43jhKiAyfV2K20Yehd/4=
-    depends_on:
-      - postgres
+      - kafka
 
   gateway-service:
     build:
       context: ../services/gateway-service
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
       - patients-service
       - scheduling-service
-      - auth-service
 
 volumes:
   postgres_data:
-
