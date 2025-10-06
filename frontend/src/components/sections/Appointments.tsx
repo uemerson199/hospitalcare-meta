@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { Appointment, Patient, Doctor, CreateAppointmentData, ApiError } from '../../types';
+import { Plus, CreditCard as Edit, Trash2, Search, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Appointment, Patient, Doctor, CreateAppointmentData, UpdateAppointmentData, ApiError } from '../../types';
 import { apiService } from '../../services/api';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -13,14 +13,22 @@ const Appointments: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [formData, setFormData] = useState<CreateAppointmentData>({
     patientId: '',
     doctorId: '',
     appointmentTime: '',
   });
+  const [editFormData, setEditFormData] = useState<UpdateAppointmentData>({
+    patientId: '',
+    doctorId: '',
+    appointmentTime: '',
+    status: 'SCHEDULED',
+  });
   const [formErrors, setFormErrors] = useState<Partial<CreateAppointmentData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<Appointment | null>(null);
 
   useEffect(() => {
     loadData();
@@ -46,23 +54,24 @@ const Appointments: React.FC = () => {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (isEdit: boolean = false): boolean => {
+    const data = isEdit ? editFormData : formData;
     const errors: Partial<CreateAppointmentData> = {};
 
-    if (!formData.patientId) {
+    if (!data.patientId) {
       errors.patientId = 'Paciente é obrigatório';
     }
 
-    if (!formData.doctorId) {
+    if (!data.doctorId) {
       errors.doctorId = 'Médico é obrigatório';
     }
 
-    if (!formData.appointmentTime) {
+    if (!data.appointmentTime) {
       errors.appointmentTime = 'Data e hora são obrigatórias';
     } else {
-      const appointmentDate = new Date(formData.appointmentTime);
+      const appointmentDate = new Date(data.appointmentTime);
       const now = new Date();
-      if (appointmentDate <= now) {
+      if (appointmentDate <= now && !isEdit) {
         errors.appointmentTime = 'Data e hora devem ser futuras';
       }
     }
@@ -74,14 +83,23 @@ const Appointments: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    const isEdit = !!editingAppointment;
+    if (!validateForm(isEdit)) return;
 
     try {
       setIsSubmitting(true);
-      await apiService.createAppointment(formData);
+      
+      if (editingAppointment) {
+        await apiService.updateAppointment(editingAppointment.id, editFormData);
+      } else {
+        await apiService.createAppointment(formData);
+      }
+      
       await loadData();
       setIsModalOpen(false);
+      setEditingAppointment(null);
       setFormData({ patientId: '', doctorId: '', appointmentTime: '' });
+      setEditFormData({ patientId: '', doctorId: '', appointmentTime: '', status: 'SCHEDULED' });
       setFormErrors({});
     } catch (error) {
       const apiError = error as ApiError;
@@ -90,16 +108,44 @@ const Appointments: React.FC = () => {
       } else if (apiError.status === 404) {
         alert('Paciente ou médico não encontrado');
       } else {
-        alert(`Erro ao agendar consulta: ${apiError.message}`);
+        alert(`Erro ao ${editingAppointment ? 'atualizar' : 'agendar'} consulta: ${apiError.message}`);
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleEdit = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setEditFormData({
+      patientId: appointment.patientId,
+      doctorId: appointment.doctorId,
+      appointmentTime: appointment.appointmentTime,
+      status: appointment.status,
+    });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (appointment: Appointment) => {
+    try {
+      await apiService.deleteAppointment(appointment.id);
+      await loadData();
+      setDeleteConfirmation(null);
+    } catch (error) {
+      const apiError = error as ApiError;
+      alert(`Erro ao excluir agendamento: ${apiError.message}`);
+    }
+  };
+
   const getPatientName = (patientId: string): string => {
     const patient = patients.find(p => p.id === patientId);
     return patient ? patient.name : 'Paciente não encontrado';
+  };
+
+  const getDoctorName = (doctorId: string): string => {
+    const doctor = doctors.find(d => d.id === doctorId);
+    return doctor ? doctor.name : 'Médico não encontrado';
   };
 
   const formatDateTime = (dateTime: string): string => {
@@ -249,6 +295,23 @@ const Appointments: React.FC = () => {
                               </div>
                             </div>
                           </div>
+                          
+                          <div className="flex space-x-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(appointment)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => setDeleteConfirmation(appointment)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -259,15 +322,17 @@ const Appointments: React.FC = () => {
         )}
       </Card>
 
-      {/* Modal de Agendamento */}
+      {/* Modal de Agendamento/Edição */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
+          setEditingAppointment(null);
           setFormData({ patientId: '', doctorId: '', appointmentTime: '' });
+          setEditFormData({ patientId: '', doctorId: '', appointmentTime: '', status: 'SCHEDULED' });
           setFormErrors({});
         }}
-        title="Nova Consulta"
+        title={editingAppointment ? 'Editar Consulta' : 'Nova Consulta'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -275,8 +340,14 @@ const Appointments: React.FC = () => {
               Paciente
             </label>
             <select
-              value={formData.patientId}
-              onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+              value={editingAppointment ? editFormData.patientId : formData.patientId}
+              onChange={(e) => {
+                if (editingAppointment) {
+                  setEditFormData({ ...editFormData, patientId: e.target.value });
+                } else {
+                  setFormData({ ...formData, patientId: e.target.value });
+                }
+              }}
               className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 formErrors.patientId ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -298,8 +369,14 @@ const Appointments: React.FC = () => {
               Médico
             </label>
             <select
-              value={formData.doctorId}
-              onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+              value={editingAppointment ? editFormData.doctorId : formData.doctorId}
+              onChange={(e) => {
+                if (editingAppointment) {
+                  setEditFormData({ ...editFormData, doctorId: e.target.value });
+                } else {
+                  setFormData({ ...formData, doctorId: e.target.value });
+                }
+              }}
               className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 formErrors.doctorId ? 'border-red-300' : 'border-gray-300'
               }`}
@@ -319,10 +396,33 @@ const Appointments: React.FC = () => {
           <Input
             label="Data e Hora"
             type="datetime-local"
-            value={formData.appointmentTime}
-            onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
+            value={editingAppointment ? editFormData.appointmentTime : formData.appointmentTime}
+            onChange={(e) => {
+              if (editingAppointment) {
+                setEditFormData({ ...editFormData, appointmentTime: e.target.value });
+              } else {
+                setFormData({ ...formData, appointmentTime: e.target.value });
+              }
+            }}
             error={formErrors.appointmentTime}
           />
+
+          {editingAppointment && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={editFormData.status}
+                onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="SCHEDULED">Agendado</option>
+                <option value="COMPLETED">Concluído</option>
+                <option value="CANCELLED">Cancelado</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3">
             <Button
@@ -333,10 +433,48 @@ const Appointments: React.FC = () => {
               Cancelar
             </Button>
             <Button type="submit" isLoading={isSubmitting}>
-              Agendar
+              {editingAppointment ? 'Atualizar' : 'Agendar'}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal
+        isOpen={!!deleteConfirmation}
+        onClose={() => setDeleteConfirmation(null)}
+        title="Confirmar Exclusão"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-700">
+            Tem certeza que deseja excluir este agendamento?
+          </p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm"><strong>Paciente:</strong> {deleteConfirmation && getPatientName(deleteConfirmation.patientId)}</p>
+            <p className="text-sm"><strong>Médico:</strong> Dr(a). {deleteConfirmation?.doctorName}</p>
+            <p className="text-sm"><strong>Data:</strong> {deleteConfirmation && formatDateTime(deleteConfirmation.appointmentTime)}</p>
+          </div>
+          <p className="text-sm text-red-600">
+            Esta ação não pode ser desfeita.
+          </p>
+          
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmation(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => deleteConfirmation && handleDelete(deleteConfirmation)}
+            >
+              Excluir
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

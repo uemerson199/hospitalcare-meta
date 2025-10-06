@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, CreditCard as Edit, Trash2, Search } from 'lucide-react';
 import { Patient, CreatePatientData, ApiError } from '../../types';
 import { apiService } from '../../services/api';
 import Button from '../ui/Button';

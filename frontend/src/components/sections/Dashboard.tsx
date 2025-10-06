@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Calendar, Activity } from 'lucide-react';
 import Card from '../ui/Card';
 import { apiService } from '../../services/api';
-import { Patient, Doctor, Appointment } from '../../types';
 
 const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({

@@ -24,6 +24,7 @@ function App() {
     return <LoginForm />;
   }
 
+
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':

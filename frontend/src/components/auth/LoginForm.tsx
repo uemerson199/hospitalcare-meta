@@ -8,12 +8,26 @@ import Card from '../ui/Card';
 
 const LoginForm: React.FC = () => {
   const { login } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  if (showRegister) {
+    const RegisterForm = React.lazy(() => import('./RegisterForm'));
+    return (
+      <React.Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      }>
+        <RegisterForm onBackToLogin={() => setShowRegister(false)} />
+      </React.Suspense>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +104,19 @@ const LoginForm: React.FC = () => {
             >
               Entrar
             </Button>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Não tem uma conta?{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowRegister(true)}
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+                >
+                  Criar conta
+                </button>
+              </p>
+            </div>
           </form>
         </Card>
 

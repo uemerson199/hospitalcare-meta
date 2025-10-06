@@ -1,15 +1,18 @@
 import { 
   LoginCredentials, 
+  RegisterCredentials, 
   AuthResponse, 
   Patient, 
   Doctor, 
   Appointment, 
   CreatePatientData, 
   CreateDoctorData, 
-  CreateAppointmentData 
+  UpdateDoctorData,
+  CreateAppointmentData,
+  UpdateAppointmentData
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 class ApiService {
   private getAuthHeaders(): HeadersInit {
@@ -22,10 +25,8 @@ class ApiService {
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => null);
-      const errorMessage = errorBody?.message || errorBody?.detail || 'Erro desconhecido na requisição';
-      
-      throw { message: errorMessage, status: response.status };
+      const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw { message: error.message || 'Request failed', status: response.status };
     }
     
     if (response.status === 204) {
@@ -35,15 +36,28 @@ class ApiService {
     return response.json();
   }
 
+  // Auth
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/login`, { 
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    return this.handleResponse<AuthResponse>(response);
+    const result = await this.handleResponse<AuthResponse>(response);
+    return result;
   }
 
+  async register(credentials: RegisterCredentials): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    const result = await this.handleResponse<AuthResponse>(response);
+    return result;
+  }
+
+  // Patients - CRUD Completo
   async getPatients(): Promise<Patient[]> {
     const response = await fetch(`${API_BASE_URL}/patients`, {
       headers: this.getAuthHeaders(),
@@ -84,11 +98,19 @@ class ApiService {
     return this.handleResponse<void>(response);
   }
 
+  // Doctors - CRUD Completo
   async getDoctors(): Promise<Doctor[]> {
     const response = await fetch(`${API_BASE_URL}/doctors`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Doctor[]>(response);
+  }
+
+  async getDoctor(id: string): Promise<Doctor> {
+    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Doctor>(response);
   }
 
   async createDoctor(data: CreateDoctorData): Promise<Doctor> {
@@ -100,11 +122,36 @@ class ApiService {
     return this.handleResponse<Doctor>(response);
   }
 
+  async updateDoctor(id: string, data: UpdateDoctorData): Promise<Doctor> {
+    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<Doctor>(response);
+  }
+
+  async deleteDoctor(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/doctors/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<void>(response);
+  }
+
+  // Appointments - CRUD Completo
   async getAppointments(): Promise<Appointment[]> {
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       headers: this.getAuthHeaders(),
     });
     return this.handleResponse<Appointment[]>(response);
+  }
+
+  async getAppointment(id: string): Promise<Appointment> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Appointment>(response);
   }
 
   async createAppointment(data: CreateAppointmentData): Promise<Appointment> {
@@ -114,6 +161,23 @@ class ApiService {
       body: JSON.stringify(data),
     });
     return this.handleResponse<Appointment>(response);
+  }
+
+  async updateAppointment(id: string, data: UpdateAppointmentData): Promise<Appointment> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<Appointment>(response);
+  }
+
+  async deleteAppointment(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<void>(response);
   }
 }
 

@@ -31,10 +31,22 @@ export interface CreateDoctorData {
   specialty: string;
 }
 
+export interface UpdateDoctorData {
+  name: string;
+  specialty: string;
+}
+
 export interface CreateAppointmentData {
   patientId: string;
   doctorId: string;
   appointmentTime: string;
+}
+
+export interface UpdateAppointmentData {
+  patientId: string;
+  doctorId: string;
+  appointmentTime: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 }
 
 export interface LoginCredentials {
@@ -42,9 +54,14 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface RegisterCredentials {
+  username: string;
+  password: string;
+}
+
 export interface AuthResponse {
   token: string;
-  user: {
+  user?: {
     id: string;
     username: string;
     name: string;

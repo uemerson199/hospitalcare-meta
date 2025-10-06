@@ -21,7 +21,7 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-gray-700">
               <User className="w-4 h-4" />
-              <span>Olá, {user?.name}</span>
+              <span>Olá, {user?.name || user?.username}</span>
             </div>
             <Button
               variant="outline"
