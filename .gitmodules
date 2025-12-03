@@ -17,3 +17,9 @@
 [submodule "services/auth-service"]
     path = services/auth-service
     url = https://github.com/uemerson199/auth-service.git
+[submodule "inventory-service"]
+	path = inventory-service
+	url = https://github.com/Jeanluca-CGoncalves/inventory-service.git
+[submodule "services/inventory-service"]
+	path = services/inventory-service
+	url = https://github.com/Jeanluca-CGoncalves/inventory-service.git
