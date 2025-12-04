@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, UserPlus, Calendar, BarChart3 } from 'lucide-react';
+import { Users, UserPlus, Calendar, BarChart3, Package } from 'lucide-react';
 
 interface NavigationProps {
   activeSection: string;
@@ -12,6 +12,8 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, onSectionChange 
     { id: 'patients', label: 'Pacientes', icon: Users },
     { id: 'doctors', label: 'Médicos', icon: UserPlus },
     { id: 'appointments', label: 'Agendamentos', icon: Calendar },
+    // ADICIONEI ESTA LINHA ABAIXO:
+    { id: 'inventory', label: 'Inventário', icon: Package },
   ];
 
   return (

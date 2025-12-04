@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Calendar, Activity } from 'lucide-react';
+import { Users, UserPlus, Calendar, Activity, Package, AlertTriangle } from 'lucide-react';
 import Card from '../ui/Card';
 import { apiService } from '../../services/api';
 
@@ -9,6 +9,8 @@ const Dashboard: React.FC = () => {
     doctors: 0,
     appointments: 0,
     todayAppointments: 0,
+    medications: 0,
+    lowStockMedications: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,10 +21,11 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [patients, doctors, appointments] = await Promise.all([
+      const [patients, doctors, appointments, medications] = await Promise.all([
         apiService.getPatients(),
         apiService.getDoctors(),
         apiService.getAppointments(),
+        apiService.getMedications(),
       ]);
 
       const today = new Date().toISOString().split('T')[0];
@@ -30,11 +33,18 @@ const Dashboard: React.FC = () => {
         (apt) => apt.appointmentTime.split('T')[0] === today
       );
 
+      // CORREÇÃO AQUI: med.currentStock -> med.quantity
+      const lowStockMedications = medications.filter(
+        (med) => med.quantity <= med.minimumStock
+      );
+      
       setStats({
         patients: patients.length,
         doctors: doctors.length,
         appointments: appointments.length,
         todayAppointments: todayAppointments.length,
+        medications: medications.length,
+        lowStockMedications: lowStockMedications.length,
       });
     } catch (error) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -68,6 +78,18 @@ const Dashboard: React.FC = () => {
       icon: Activity,
       color: 'orange',
     },
+    {
+      title: 'Medicamentos',
+      value: stats.medications,
+      icon: Package,
+      color: 'indigo',
+    },
+    {
+      title: 'Estoque Baixo',
+      value: stats.lowStockMedications,
+      icon: AlertTriangle,
+      color: 'red',
+    },
   ];
 
   if (isLoading) {
@@ -85,7 +107,7 @@ const Dashboard: React.FC = () => {
         <p className="text-gray-600">Visão geral do sistema HospitalCare</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           const colorClasses = {
@@ -93,6 +115,8 @@ const Dashboard: React.FC = () => {
             green: 'bg-green-500 text-white',
             purple: 'bg-purple-500 text-white',
             orange: 'bg-orange-500 text-white',
+            indigo: 'bg-indigo-500 text-white',
+            red: 'bg-red-500 text-white',
           };
 
           return (
@@ -143,6 +167,12 @@ const Dashboard: React.FC = () => {
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Agendar Consultas</p>
                 <p className="text-xs text-gray-500">Criar novos agendamentos médicos</p>
+              </div>
+            </div>
+            <div className="flex items-center p-3 border-l-4 border-indigo-500 bg-indigo-50">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">Gerenciar Inventário</p>
+                <p className="text-xs text-gray-500">Controlar estoque de medicamentos</p>
               </div>
             </div>
           </div>

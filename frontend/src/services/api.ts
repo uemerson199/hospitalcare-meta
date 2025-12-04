@@ -5,18 +5,18 @@ import {
   Patient, 
   Doctor, 
   Appointment, 
+  Medication,
   CreatePatientData, 
   CreateDoctorData, 
   UpdateDoctorData,
   CreateAppointmentData,
-  UpdateAppointmentData
+  UpdateAppointmentData,
+  CreateMedicationData
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080';
 
 class ApiService {
-  
-  // Recupera o token salvo e monta o cabeçalho
   private getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('token');
     return {
@@ -25,21 +25,12 @@ class ApiService {
     };
   }
 
-  // Tratamento genérico de resposta
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      // Tenta ler o erro do JSON, se falhar, usa mensagem genérica
       const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-      
-      // Se for 401 (Token expirado ou inválido), pode ser útil limpar o storage
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-      }
-
       throw { message: error.message || 'Request failed', status: response.status };
     }
     
-    // Retorna nulo para status 204 (No Content)
     if (response.status === 204) {
       return null as T;
     }
@@ -47,22 +38,14 @@ class ApiService {
     return response.json();
   }
 
-  // --- AUTHENTICATION ---
-
+  // Auth - CORRIGIDO: Adicionado o prefixo /auth para casar com o Gateway
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    
     const result = await this.handleResponse<AuthResponse>(response);
-
-    // [CORREÇÃO] Salva o token no localStorage para ser usado nas próximas requisições
-    if (result && result.token) {
-      localStorage.setItem('token', result.token);
-    }
-
     return result;
   }
 
@@ -72,24 +55,11 @@ class ApiService {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
     });
-    
     const result = await this.handleResponse<AuthResponse>(response);
-
-    // Se o registro já retornar o token, salvamos também
-    if (result && result.token) {
-      localStorage.setItem('token', result.token);
-    }
-
     return result;
   }
 
-  // Método novo para deslogar
-  logout(): void {
-    localStorage.removeItem('token');
-  }
-
-  // --- PATIENTS (CRUD Completo) ---
-
+  // Patients - CRUD Completo
   async getPatients(): Promise<Patient[]> {
     const response = await fetch(`${API_BASE_URL}/patients`, {
       headers: this.getAuthHeaders(),
@@ -130,8 +100,7 @@ class ApiService {
     return this.handleResponse<void>(response);
   }
 
-  // --- DOCTORS (CRUD Completo) ---
-
+  // Doctors - CRUD Completo
   async getDoctors(): Promise<Doctor[]> {
     const response = await fetch(`${API_BASE_URL}/doctors`, {
       headers: this.getAuthHeaders(),
@@ -172,8 +141,7 @@ class ApiService {
     return this.handleResponse<void>(response);
   }
 
-  // --- APPOINTMENTS (CRUD Completo) ---
-
+  // Appointments - CRUD Completo
   async getAppointments(): Promise<Appointment[]> {
     const response = await fetch(`${API_BASE_URL}/appointments`, {
       headers: this.getAuthHeaders(),
@@ -208,6 +176,47 @@ class ApiService {
 
   async deleteAppointment(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/appointments/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<void>(response);
+  }
+
+  // Inventory - CRUD Completo
+  async getMedications(): Promise<Medication[]> {
+    const response = await fetch(`${API_BASE_URL}/inventory`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Medication[]>(response);
+  }
+
+  async getMedication(id: string): Promise<Medication> {
+    const response = await fetch(`${API_BASE_URL}/inventory/${id}`, {
+      headers: this.getAuthHeaders(),
+    });
+    return this.handleResponse<Medication>(response);
+  }
+
+  async createMedication(data: CreateMedicationData): Promise<Medication> {
+    const response = await fetch(`${API_BASE_URL}/inventory`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.handleResponse<Medication>(response);
+  }
+
+  async updateMedicationStock(id: string, amount: number): Promise<Medication> {
+    const response = await fetch(`${API_BASE_URL}/inventory/${id}/stock`, {
+      method: 'PATCH',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({ amount }),
+    });
+    return this.handleResponse<Medication>(response);
+  }
+
+  async deleteMedication(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/inventory/${id}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });

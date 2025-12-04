@@ -21,6 +21,7 @@ services:
   auth-service:
     build:
       context: ../services/auth-service
+    container_name: auth-service
     ports:
       - "8083:8083"
     environment:
@@ -34,6 +35,7 @@ services:
   patients-service:
     build:
       context: ../services/patients-service
+    container_name: patients-service
     ports:
       - "8081:8081"
     environment:
@@ -47,6 +49,7 @@ services:
   scheduling-service:
     build:
       context: ../services/scheduling-service
+    container_name: scheduling-service
     ports:
       - "8082:8082"
     environment:
@@ -60,15 +63,33 @@ services:
       - postgres
       - redis
 
+  # Novo serviço adicionado
+  inventory-service:
+    build:
+      context: ../services/inventory-service
+    container_name: inventory-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_PORT=8086
+      # Note a alteração de 'localhost' para 'postgres' na URL
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hospital_db
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      - postgres
+
   gateway-service:
     build:
       context: ../services/gateway-service
+    container_name: gateway-service
     ports:
       - "8080:8080"
     depends_on:
       - patients-service
       - scheduling-service
-      - auth-service  \
+      - auth-service
+      - inventory-service
 
 volumes:
   postgres_data:

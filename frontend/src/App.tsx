@@ -7,6 +7,7 @@ import Dashboard from './components/sections/Dashboard';
 import Patients from './components/sections/Patients';
 import Doctors from './components/sections/Doctors';
 import Appointments from './components/sections/Appointments';
+import Inventory from './components/sections/Inventory';
 
 function App() {
   const { user, isLoading } = useAuth();
@@ -35,6 +36,8 @@ function App() {
         return <Doctors />;
       case 'appointments':
         return <Appointments />;
+      case 'inventory':
+        return <Inventory />;
       default:
         return <Dashboard />;
     }
